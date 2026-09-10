@@ -1,9 +1,9 @@
-// main.cpp — QuorumKV node entrypoint.
-// Usage: quorumkv_node <config-file>
+// main.cpp — QueryKV node entrypoint.
+// Usage: querykv_node <config-file>
 
 #include <iostream>
-#include "quorumkv/config.hpp"
-#include "quorumkv/node.hpp"
+#include "querykv/config.hpp"
+#include "querykv/node.hpp"
 
 int main(int argc, char** argv) {
     if (argc != 2) {
