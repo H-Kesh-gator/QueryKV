@@ -1,0 +1,97 @@
+# docker-compose.yml — brings up the full 2-shard, 3-replica-per-shard
+# QueryKV cluster (6 containers total).
+#
+#   docker compose up --build
+#   docker compose run --rm cli status
+#   docker compose run --rm cli put foo bar
+#   docker compose run --rm cli get foo
+#
+# To see the fault-tolerance story live:
+#   docker compose ps                     # note which container is shard 0's leader (see `status`)
+#   docker compose kill s0n2 -s SIGKILL    # or whichever is currently leading shard 0
+#   docker compose run --rm cli status     # watch a new leader appear within ~1.5s
+#   docker compose start s0n2              # bring it back — it recovers from its own WAL volume
+#
+# Each node's /data is a named volume, so `docker compose restart` or
+# a crash-and-restart preserves that node's WAL + snapshot exactly
+# like a real server reboot would.
+
+services:
+  s0n0:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    hostname: s0n0
+    container_name: qkv-s0n0
+    command: ["/config/s0n0.conf"]
+    volumes:
+      - ./config/docker/s0n0.conf:/config/s0n0.conf:ro
+      - s0n0-data:/data
+    ports: ["7000:7000"]
+
+  s0n1:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    hostname: s0n1
+    container_name: qkv-s0n1
+    command: ["/config/s0n1.conf"]
+    volumes:
+      - ./config/docker/s0n1.conf:/config/s0n1.conf:ro
+      - s0n1-data:/data
+    ports: ["7001:7000"]
+
+  s0n2:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    hostname: s0n2
+    container_name: qkv-s0n2
+    command: ["/config/s0n2.conf"]
+    volumes:
+      - ./config/docker/s0n2.conf:/config/s0n2.conf:ro
+      - s0n2-data:/data
+    ports: ["7002:7000"]
+
+  s1n0:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    hostname: s1n0
+    container_name: qkv-s1n0
+    command: ["/config/s1n0.conf"]
+    volumes:
+      - ./config/docker/s1n0.conf:/config/s1n0.conf:ro
+      - s1n0-data:/data
+    ports: ["7003:7000"]
+
+  s1n1:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    hostname: s1n1
+    container_name: qkv-s1n1
+    command: ["/config/s1n1.conf"]
+    volumes:
+      - ./config/docker/s1n1.conf:/config/s1n1.conf:ro
+      - s1n1-data:/data
+    ports: ["7004:7000"]
+
+  s1n2:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    hostname: s1n2
+    container_name: qkv-s1n2
+    command: ["/config/s1n2.conf"]
+    volumes:
+      - ./config/docker/s1n2.conf:/config/s1n2.conf:ro
+      - s1n2-data:/data
+    ports: ["7005:7000"]
+
+  # Not started by `up` (no other service depends_on it) — invoked
+  # on demand with `docker compose run --rm cli <command>`.
+  cli:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    entrypoint: ["/app/querykv_cli"]
+    command: ["/config/client.conf", "status"]
+    volumes:
+      - ./config/docker/client.conf:/config/client.conf:ro
+    network_mode: "service:s0n0" # reach every node via the same network namespace as s0n0
+    profiles: ["tools"]
+
+volumes:
+  s0n0-data:
+  s0n1-data:
+  s0n2-data:
+  s1n0-data:
+  s1n1-data:
+  s1n2-data:
