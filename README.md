@@ -128,7 +128,7 @@ make test                  # Unit tests (WAL, protocol, sharding)
 
 ## Scope Cuts
 
-Not implemented (state these clearly in interviews):
+Not implemented:
 - InstallSnapshot RPC for followers behind the snapshot point
 - Cluster membership changes (fixed shard count + members)
 - Pre-vote to prevent disruptive elections
